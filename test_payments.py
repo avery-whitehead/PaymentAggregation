@@ -2,97 +2,62 @@
 Verifies the aggregate payment output is correct
 """
 
-PAYMENTS = [
-    161.28,
-    84.03,
-    238.88,
-    67.34,
-    169.39,
-    404.82,
-    283.20,
-    803.92,
-    55.32,
-    237.09,
-    25.32,
-    32.55,
-    12.56,
-    20.24,
-    50.24,
-    142.34,
-    25.88,
-    239.67,
-    106.52,
-    232.17,
-    313.15,
-    431.18,
-    16.97,
-    419.38,
-    137.28,
-    151.71,
-    176.02,
-    5.94,
-    576.04,
-    97.80,
-    97.80,
-    300.15,
-    395.85,
-    374.01,
-    144.00,
-    150.67,
-    322.53,
-    137.93,
-    95.64,
-    441.77,
-    100.44,
-    100.44,
-    253.82,
-    60.04,
-    319.93,
-    16.38,
-    162.48,
-    184.47,
-    190.06,
-    324.35,
-    31.68,
-    167.45,
-    521.00,
-    97.44,
-    14.61,
-    30.54,
-    597.86,
-    38.67,
-    475.09,
-    327.00,
-    37.20,
-    324.35,
-    234.78,
-    168.61,
-    283.27,
-    168.61,
-    283.27,
-    112.84,
-    342.68,
-    177.45,
-    28.62,
-    122.66,
-    48.51,
-    175.56,
-    105.84,
-    171.36,
-    29.76,
-    89.68,
-    89.68,
-    109.44,
-    54.72,
-    27.36,
-    54.72,
-    422.28,
-    99.36,
-    24.84,
-    99.36,
-    73.08,
-    142.68,
-    79.08,
-    101.67,
-    1744.54]
-print(sum(PAYMENTS))
+import unittest
+
+class TestPayments(unittest.TestCase):
+    """
+    Tests payments for data file bpy331_1487931_7163.1.dat have been
+    aggregated correctly. Rounding errors can occur, so only test up to
+    2 decimal places
+    """
+
+    def test_first_payment_aggregation(self):
+        """
+        Tests payments to "MRS RV O'DRISCROLL/08-93-00/83225776"
+        """
+        payments = [
+            535.71,
+            232.57,
+            465.01,
+            143.08,
+            4095.00]
+        self.assertAlmostEqual(sum(payments), 5471.37, places=2)
+
+    def test_second_payment_aggregation(self):
+        """
+        Tests payments to
+        "BROADACRES HOUSING ASSOCIATION/20-61-53/20441430"
+        """
+        payments = [
+            1503.33,
+            891.00,
+            422.13,
+            42.15,
+            166.59,
+            73.98,
+            95.12,
+            1922.78,
+            38.79,
+            140.38,
+            786.33,
+            41.76,
+            81.53,
+            33.75,
+            43.39,
+            212.97,
+            415.80,
+            142.14,
+            87.99,
+            531.25,
+            528.90]
+        self.assertAlmostEqual(sum(payments), 8202.06, places=2)
+
+    def test_third_payment_aggregation(self):
+        """
+        Tests payments to " J BROWN/09-01-28/65950684"
+        """
+        payments = [3025.0]
+        self.assertAlmostEqual(sum(payments), 3025.0, places=2)
+
+if __name__ == "__main__":
+    unittest.main()
