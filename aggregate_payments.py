@@ -3,10 +3,7 @@ Takes a BPY331 formatted log of payment records, aggregates the total of each
 payee and writes it back to the file
 
 TODO:
-    Refactor - create a general Payment object for every record, not just the
-    unique ones
-    Find some way of aggregating each Payment object. Sort code/acount number
-    combination isn't unique enough
+    Construct aggregate Payment objects and write back to file
 """
 
 import os
