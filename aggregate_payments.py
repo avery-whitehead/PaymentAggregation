@@ -4,9 +4,9 @@ payee and writes it back to the file
 
 TODO:
     Refactor - create a general Payment object for every record, not just the
-    unique ones.
+    unique ones
     Find some way of aggregating each Payment object. Sort code/acount number
-    combination isn't unique enough.
+    combination isn't unique enough
 """
 
 import os
@@ -68,7 +68,7 @@ def gather_and_check_files(files_dir, log_path):
     threshold = now - datetime.timedelta(minutes=99999999)
     with open(log_path) as log_file:
         log = log_file.readlines()
-    for root, dirs, files in os.walk(files_dir):
+    for root, _, files in os.walk(files_dir):
         for file_name in files:
             # If file name matches the correct format
             if file_name.startswith('bpy331_') and file_name.endswith('.dat'):
@@ -82,7 +82,7 @@ def gather_and_check_files(files_dir, log_path):
 
 def create_payment_objs(dat_path):
     """
-    Creates a list of Payment objects given a file with some payment records.
+    Creates a list of Payment objects given a file with some payment records
 
     Args:
         dat_path (str): The path of the file with the payment records
@@ -113,12 +113,64 @@ def create_payment_objs(dat_path):
         payments_list.append(payment)
     return payments_list
 
+def combine_payments(payments_list):
+    """
+    Given a list of payments, combine them according to their account ref
+    as a kind of primary key
+
+    Args:
+        payments_list (list of Payment): The list of Payment objects to
+        aggregate
+
+    Returns:
+        (dict of str:list of Payment): A dictionary object with the structure
+        {account ref: [list of Payment objects with this account ref]}
+    """
+    # Creates a unique set of account refs
+    account_refs = []
+    for payment in payments_list:
+        account_refs.append(payment.account_ref)
+    account_refs = set(account_refs)
+    # Creates a dictionary of payments with each unique account ref
+    combined_payments = {}
+    for account_ref in account_refs:
+        temp_payments_list = []
+        for payment in payments_list:
+            if payment.account_ref == account_ref:
+                temp_payments_list.append(payment)
+        combined_payments[account_ref] = temp_payments_list
+    return combined_payments
+
+def aggregate_payments(account_ref):
+    """
+    Given a tuple of payments attached to an account ref, creates a new
+    Payment object with an aggregation of their total payment amounts.
+
+    Args:
+        combined_payments (tuple of str, list of Payment): A dictionary object
+        with the structure (account_ref, [list of payments])
+
+    Returns:
+        (Payment): A single Payment object with an aggregated amount
+    """
+    total_amount = 0
+    for payment in account_ref[1]:
+        #Trims the quotes from the amount and casts to a float
+        amount = float(payment.amount[1:-2])
+        total_amount += amount
+    total_amount = round(total_amount, 2)
+    print('{}: {}'.format(account_ref[0], total_amount))
+
+
 def print_payment_obj(payment):
     """
     Prints a formatted Payment object
 
     Args:
         payment (Payment): The Payment object to print
+
+    Returns:
+        None
     """
     items = payment.__dict__.items()
     for key, value in items:
@@ -129,16 +181,29 @@ def print_payment_obj(payment):
                 print(str(value).replace(' ', ''))
     print()
 
-def aggregate_payments(payments_list):
-    account_refs = []
-    for payment in payments_list:
-        account_refs.append(payment.account_ref)
-    account_refs = set(account_refs)
-    print(account_refs)
+def print_payments_dict(payments_dict):
+    """
+    Prints a formatted dictionary of account references and their associated
+    Payment objects
+
+    Args:
+        payments_dict (dict of str:list of Payment): A dictionary object with
+        the structure {account ref: [list of Payment objects with this account
+        ref]}
+
+    Returns:
+        None
+    """
+    for account_ref, payments in payments_dict.items():
+        print('{}'.format(account_ref))
+        for payment in payments:
+            print_payment_obj(payment)
 
 if __name__ == '__main__':
     SYSTIME = datetime.date.today().strftime('%d-%b-%Y').upper()
     NEW_DATS = gather_and_check_files('.\\data', '.\\checked_files.log')
     for new_dat in NEW_DATS:
         payments_list = create_payment_objs(new_dat)
-        aggregate_payments(payments_list)
+        combined_payments = combine_payments(payments_list)
+        for account_ref in combined_payments.items():
+            aggregate_payments(account_ref)
