@@ -50,13 +50,6 @@ class Payment(object):
         # Fancy kwargs magic for default constructor values
         self.__dict__.update(self.defaults)
         self.__dict__.update(kwargs)
-    
-    def __setitem__(self, key, value):
-        if key not in self.defaults.keys():
-            raise KeyError
-        self.defaults[key] = value
-        self.__dict__.update(self.defaults)
-        
 
 def gather_and_check_files(files_dir, log_path):
     """
@@ -107,16 +100,16 @@ def create_payment_objs(dat_path):
             (dat[i + 15])[1:-2],
             (dat[i + 16])[1:])
         # Sets the non-default attributes of a Payment
-        payment = Payment()
-        payment['batch_run_id'] = dat[i + 1]
-        payment['posting_ref'] = dat[i + 2]
-        payment['account_ref'] = account_ref
-        payment['payee_name'] = dat[i + 5]
-        payment['payee_address'] = dat[i + 6]
-        payment['amount'] = dat[i + 10]
-        payment['bank_sort_code'] = dat[i + 15]
-        payment['bank_account_num'] = dat[i + 16]
-        payment['bank_account_name'] = dat[i + 17]
+        payment = Payment(
+            batch_run_id=dat[i + 1],
+            posting_ref=dat[i + 2],
+            account_ref=account_ref,
+            payee_name=dat[i + 5],
+            payee_address=dat[i + 6],
+            amount=dat[i + 10],
+            bank_sort_code=dat[i + 15],
+            bank_account_num=dat[i + 16],
+            bank_account_name=dat[i + 17])
         payments_list.append(payment)
     return payments_list
 
@@ -136,10 +129,16 @@ def print_payment_obj(payment):
                 print(str(value).replace(' ', ''))
     print()
 
+def aggregate_payments(payments_list):
+    account_refs = []
+    for payment in payments_list:
+        account_refs.append(payment.account_ref)
+    account_refs = set(account_refs)
+    print(account_refs)
+
 if __name__ == '__main__':
     SYSTIME = datetime.date.today().strftime('%d-%b-%Y').upper()
     NEW_DATS = gather_and_check_files('.\\data', '.\\checked_files.log')
     for new_dat in NEW_DATS:
         payments_list = create_payment_objs(new_dat)
-        for payment in payments_list:
-            print_payment_obj(payment)
+        aggregate_payments(payments_list)
