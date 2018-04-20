@@ -157,7 +157,6 @@ def aggregate_payments(account_ref):
         aggr_amount += amount
     # Rounds to two decimal places and adds the quotes back
     aggr_amount = '"{:.2f}"'.format(aggr_amount)
-    #print('{}: {}'.format(account_ref[0], aggr_amount))
     aggr_payment = Payment(
         batch_run_id=account_ref[1][0].batch_run_id,
         posting_ref=account_ref[1][0].posting_ref,
@@ -174,8 +173,30 @@ def write_aggregate_payments(dat_path, aggr_payments_list):
     """
     Writes a series of aggregated payments to file, overwriting the
     pre-existing file of non-aggregated records.
-    """
 
+    Args:
+        dat_path (str): The path of the file to write to
+        aggr_payments_list (list of Payment): The Payments to write to file
+
+    Returns:
+        (str): A string indicating success and writing information
+    """
+    temp_path = '{}.new'.format(dat_path[:-4])
+    with open(temp_path, 'w') as write_file:
+        count = 0
+        for payment in aggr_payments_list:
+            for key, value in payment.__dict__.items():
+                if key != 'defaults':
+                    write_file.write('{}\n'.format(value))
+            count += 1
+            print('Written {}/{} payments to {}'.format(
+                count,
+                len(aggr_payments_list),
+                temp_path))
+    return('Successfully written {}/{} payments to {}'.format(
+        count,
+        len(aggr_payments_list),
+        temp_path))
 
 def print_payment_obj(payment):
     """
@@ -223,3 +244,4 @@ if __name__ == '__main__':
         aggr_payments_list = []
         for account_ref in combined_payments.items():
             aggr_payments_list.append(aggregate_payments(account_ref))
+        print(write_aggregate_payments(new_dat, aggr_payments_list))
