@@ -21,13 +21,13 @@ class Payment(object):
             'account_ref': '"account_ref"',
             'payee_type': '"CL"',
             'payee_name': '"payee_name"',
-            'payee_address': '"payee_address"',
-            'claim_ref': '"claim_ref"',
-            'claimant_name': '"claimant_name"',
-            'claimant_adddress': '"claimant_address"',
+            'payee_address': '"AGGREGATED"',
+            'claim_ref': '"AGGREGATED"',
+            'claimant_name': '"AGGREGATED"',
+            'claimant_adddress': '"AGGREGATED"',
             'amount': '"amount"',
-            'posting_start_date': '"posting_start_date"',
-            'posting_end_date': '"posting_end_date"',
+            'posting_start_date': '"{}"'.format(SYSTIME),
+            'posting_end_date': '"{}"'.format(SYSTIME),
             'payment_method': '"BACS"',
             'creditor_account_ref': '""',
             'bank_sort_code': '"bank_sort_code"',
@@ -91,17 +91,16 @@ def create_payment_objs(dat_path):
     with open(dat_path) as dat_file:
         dat = dat_file.read().splitlines()
     for i in range(1, len(dat), 29):
-        #"<payee_name>/<bank_sort_code>/<bank_account_num>"
+        #"<bank_sort_code>/<bank_account_num>"
         account_ref = '{}/{}'.format(
-            (dat[i + 15])[:-2].replace('-',''),
+            (dat[i + 15])[:-2].replace('-', ''),
             (dat[i + 16])[1:])
         # Sets the non-default attributes of a Payment
         payment = Payment(
             batch_run_id=dat[i + 1],
             posting_ref=dat[i + 2],
             account_ref=account_ref,
-            payee_name=dat[i + 5],
-            payee_address=dat[i + 6],
+            payee_name=dat[i + 17],
             amount=dat[i + 10],
             bank_sort_code=dat[i + 15],
             bank_account_num=dat[i + 16],
@@ -161,7 +160,6 @@ def aggregate_payments(account_ref):
         posting_ref=account_ref[1][0].posting_ref,
         account_ref=account_ref[0],
         payee_name=account_ref[1][0].payee_name,
-        payee_address=account_ref[1][0].payee_address,
         amount=aggr_amount,
         bank_sort_code=account_ref[1][0].bank_sort_code,
         bank_account_num=account_ref[1][0].bank_account_num,
@@ -181,7 +179,11 @@ def write_aggregate_payments(dat_path, aggr_payments_list):
         (str): A string indicating success and writing information
     """
     temp_path = '{}.new'.format(dat_path[:-4])
+    # Gets the header from the original file before overwriting it
+    with open(dat_path, 'r') as read_file:
+        header = read_file.read().splitlines()[0]
     with open(temp_path, 'w') as write_file:
+        write_file.write(header)
         count = 0
         for payment in aggr_payments_list:
             for key, value in payment.__dict__.items():
