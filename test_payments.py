@@ -13,7 +13,7 @@ class TestPayments(unittest.TestCase):
 
     def test_first_payment_aggregation(self):
         """
-        Tests payments to "MRS RV O'DRISCROLL/08-93-00/83225776"
+        Tests payments to "MRS RV O'DRISCROLL/##-##-##/########"
         """
         payments = [
             535.71,
@@ -26,7 +26,7 @@ class TestPayments(unittest.TestCase):
     def test_second_payment_aggregation(self):
         """
         Tests payments to
-        "BROADACRES HOUSING ASSOCIATION/20-61-53/20441430"
+        "BROADACRES HOUSING ASSOCIATION/##-##-##/########"
         """
         payments = [
             1503.33,
@@ -54,7 +54,7 @@ class TestPayments(unittest.TestCase):
 
     def test_third_payment_aggregation(self):
         """
-        Tests payments to " J BROWN/09-01-28/65950684"
+        Tests payments to " J BROWN/##-##-##/########"
         """
         payments = [3025.0]
         self.assertAlmostEqual(sum(payments), 3025.0, places=2)

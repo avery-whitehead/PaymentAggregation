@@ -150,13 +150,31 @@ def aggregate_payments(account_ref):
     Returns:
         (Payment): A single Payment object with an aggregated amount
     """
-    total_amount = 0
+    aggr_amount = 0
     for payment in account_ref[1]:
-        #Trims the quotes from the amount and casts to a float
+        # Trims the quotes from the amount and casts to a float for addition
         amount = float(payment.amount[1:-2])
-        total_amount += amount
-    total_amount = round(total_amount, 2)
-    print('{}: {}'.format(account_ref[0], total_amount))
+        aggr_amount += amount
+    # Rounds to two decimal places and adds the quotes back
+    aggr_amount = '"{:.2f}"'.format(aggr_amount)
+    #print('{}: {}'.format(account_ref[0], aggr_amount))
+    aggr_payment = Payment(
+        batch_run_id=account_ref[1][0].batch_run_id,
+        posting_ref=account_ref[1][0].posting_ref,
+        account_ref=account_ref[0],
+        payee_name=account_ref[1][0].payee_name,
+        payee_address=account_ref[1][0].payee_address,
+        amount=aggr_amount,
+        bank_sort_code=account_ref[1][0].bank_sort_code,
+        bank_account_num=account_ref[1][0].bank_account_num,
+        bank_account_name=account_ref[1][0].bank_account_name)
+    return aggr_payment
+
+def write_aggregate_payments(dat_path, aggr_payments_list):
+    """
+    Writes a series of aggregated payments to file, overwriting the
+    pre-existing file of non-aggregated records.
+    """
 
 
 def print_payment_obj(payment):
@@ -202,5 +220,6 @@ if __name__ == '__main__':
     for new_dat in NEW_DATS:
         payments_list = create_payment_objs(new_dat)
         combined_payments = combine_payments(payments_list)
+        aggr_payments_list = []
         for account_ref in combined_payments.items():
-            aggregate_payments(account_ref)
+            aggr_payments_list.append(aggregate_payments(account_ref))
