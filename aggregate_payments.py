@@ -92,9 +92,8 @@ def create_payment_objs(dat_path):
         dat = dat_file.read().splitlines()
     for i in range(1, len(dat), 29):
         #"<payee_name>/<bank_sort_code>/<bank_account_num>"
-        account_ref = '{}/{}/{}'.format(
-            (dat[i + 5])[:-2],
-            (dat[i + 15])[1:-2],
+        account_ref = '{}/{}'.format(
+            (dat[i + 15])[:-2].replace('-',''),
             (dat[i + 16])[1:])
         # Sets the non-default attributes of a Payment
         payment = Payment(
