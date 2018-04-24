@@ -59,5 +59,5 @@ class TestPayments(unittest.TestCase):
         payments = [3025.0]
         self.assertAlmostEqual(sum(payments), 3025.0, places=2)
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     unittest.main()
