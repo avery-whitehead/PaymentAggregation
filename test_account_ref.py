@@ -25,6 +25,22 @@ class TestCheckdigits(unittest.TestCase):
         check_digit = generate_check_digit('40-35-03')
         self.assertEqual(check_digit % 10, 6)
         self.assertEqual(verify_check_digit(check_digit), True)
+    
+    def test_third_check_digit(self):
+        """
+        Tests digit for 09-01-28 (Payment example)
+        """
+        check_digit = generate_check_digit('09-01-28')
+        self.assertEqual(check_digit % 10, 0)
+        self.assertEqual(verify_check_digit(check_digit), True)
+    
+    def test_fourth_check_digit(self):
+        """
+        Tests digit for 30-99-99 (Payment example)
+        """
+        check_digit = generate_check_digit('30-99-99')
+        self.assertEqual(check_digit % 10, 1)
+        self.assertEqual(verify_check_digit(check_digit), True)
 
 def generate_check_digit(sort_code):
     """

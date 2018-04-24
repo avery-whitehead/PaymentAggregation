@@ -22,7 +22,7 @@ class Payment(object):
             'payee_type': '"CL"',
             'payee_name': '"payee_name"',
             'payee_address': '"Aggregated DHC UC Payment"',
-            'claim_ref': '"Aggregated DHC UC Payment"',
+            'claim_ref': '"claim_ref"',
             'claimant_name': '"Aggregated DHC UC Payment"',
             'claimant_adddress': '"Aggregated DHC UC Payment"',
             'amount': '"amount"',
@@ -91,22 +91,48 @@ def create_payment_objs(dat_path):
     with open(dat_path) as dat_file:
         dat = dat_file.read().splitlines()
     for i in range(1, len(dat), 29):
-        #"<bank_sort_code>/<bank_account_num>"
-        account_ref = '{}/{}'.format(
-            (dat[i + 15])[:-2].replace('-', ''),
-            (dat[i + 16])[1:])
+        #"<bank_account_num><sort_code check digit>"
+        account_ref = generate_check_digit(
+            dat[i + 16].replace('"', '').replace(' ', ''),
+            dat[i + 15].replace('"', '').replace(' ', ''))
         # Sets the non-default attributes of a Payment
         payment = Payment(
             batch_run_id=dat[i + 1],
             posting_ref=dat[i + 2],
             account_ref=account_ref,
             payee_name=dat[i + 17],
+            claim_ref=account_ref,
             amount=dat[i + 10],
             bank_sort_code=dat[i + 15],
             bank_account_num=dat[i + 16],
             bank_account_name=dat[i + 17])
         payments_list.append(payment)
     return payments_list
+
+def generate_check_digit(account_num, sort_code):
+    """
+    Generates a mod10 (Luhn) algorithm checkdigit from a bank sort code
+
+    Args:
+        sort_code (str): The sort code to generate a check digit for
+
+    Returns:
+        (str): The account number with the sort code's check digit appended
+    """
+    sort_code = sort_code.replace('-', '')
+    sort_code_ints = [int(num) for num in list(sort_code)]
+    # Multiply every second element by 2
+    ints_mult = [
+        num * 2 if index % 2 != 0 else num
+        for index, num in enumerate(sort_code_ints)]
+    # Change any two-digit numbers into two elements (e.g. [18] -> [1, 8])
+    temp_list = ''.join(str(c) for c in ints_mult)
+    ints_mult = [int(num) for num in temp_list]
+    # Sum the ints and subtract from the nearest multiple of 10
+    check_digit = 10 - sum(ints_mult) % 10
+    if check_digit == 10:
+        check_digit = 0
+    return '"{}{}"'.format(account_num, str(check_digit))
 
 def combine_payments(payments_list):
     """
@@ -160,6 +186,7 @@ def aggregate_payments(account_ref):
         posting_ref=account_ref[1][0].posting_ref,
         account_ref=account_ref[0],
         payee_name=account_ref[1][0].payee_name,
+        claim_ref=account_ref[1][0].claim_ref,
         amount=aggr_amount,
         bank_sort_code=account_ref[1][0].bank_sort_code,
         bank_account_num=account_ref[1][0].bank_account_num,
