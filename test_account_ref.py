@@ -36,10 +36,10 @@ class TestCheckdigits(unittest.TestCase):
 
     def test_fourth_check_digit(self):
         """
-        Tests digit for 30-99-99 (Payment example)
+        Tests digit for 20-61-46 (Payment example)
         """
-        check_digit = generate_check_digit('30-99-99')
-        self.assertEqual(check_digit % 10, 1)
+        check_digit = generate_check_digit('20-61-46')
+        self.assertEqual(check_digit % 10, 3)
         self.assertEqual(verify_check_digit(check_digit), True)
 
 def generate_check_digit(sort_code):

@@ -21,10 +21,10 @@ class Payment(object):
             'account_ref': '"account_ref"',
             'payee_type': '"CL"',
             'payee_name': '"payee_name"',
-            'payee_address': '"Aggregated DHC UC Payment"',
+            'payee_address': '"Aggregated DHP UC Payment"',
             'claim_ref': '"claim_ref"',
-            'claimant_name': '"Aggregated DHC UC Payment"',
-            'claimant_adddress': '"Aggregated DHC UC Payment"',
+            'claimant_name': '"Aggregated DHP UC Payment"',
+            'claimant_adddress': '"Aggregated DHP UC Payment"',
             'amount': '"amount"',
             'posting_start_date': '"{}"'.format(SYSTIME),
             'posting_end_date': '"{}"'.format(SYSTIME),
@@ -91,8 +91,8 @@ def create_payment_objs(dat_path):
     with open(dat_path) as dat_file:
         dat = dat_file.read().splitlines()
     for i in range(1, len(dat), 29):
-        #"<bank_account_num><sort_code check digit>"
-        account_ref = generate_check_digit(
+        #<bank_account_num><sort_code check digit>"
+        account_ref = generate_account_ref(
             dat[i + 16].replace('"', '').replace(' ', ''),
             dat[i + 15].replace('"', '').replace(' ', ''))
         # Sets the non-default attributes of a Payment
@@ -109,15 +109,18 @@ def create_payment_objs(dat_path):
         payments_list.append(payment)
     return payments_list
 
-def generate_check_digit(account_num, sort_code):
+def generate_account_ref(account_num, sort_code):
     """
-    Generates a mod10 (Luhn) algorithm checkdigit from a bank sort code
+    Generates a mod10 (Luhn) algorithm checkdigit from a bank sort code.
+    Also does a mod26 on the first two digits of the account number
 
     Args:
         sort_code (str): The sort code to generate a check digit for
 
     Returns:
-        (str): The account number with the sort code's check digit appended
+        (str): The account ref in the format "<first two digits of account_num
+        mod26 as an alphabet character><remaining digits of account_num>
+        <sort_code check digit>"
     """
     sort_code = sort_code.replace('-', '')
     sort_code_ints = [int(num) for num in list(sort_code)]
@@ -132,7 +135,12 @@ def generate_check_digit(account_num, sort_code):
     check_digit = 10 - sum(ints_mult) % 10
     if check_digit == 10:
         check_digit = 0
-    return '"{}{}"'.format(account_num, str(check_digit))
+    # mod26 the first two characters of the account_num and convert to a char
+    mod_digits = int(account_num[:2]) % 26
+    mod_char = chr(mod_digits + 64)
+    if mod_digits == 0:
+        mod_char = 'A'
+    return '"{}{}{}"'.format(mod_char, account_num[2:], str(check_digit))
 
 def combine_payments(payments_list):
     """
