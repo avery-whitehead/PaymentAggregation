@@ -8,6 +8,7 @@ TODO:
 
 import os
 import datetime
+import sys
 
 class Payment(object):
     """
@@ -33,7 +34,7 @@ class Payment(object):
             'bank_sort_code': '"bank_sort_code"',
             'bank_account_num': '"bank_account_num"',
             'bank_account_name': '"bank_account_name"',
-            'building_society_num': '"0"',
+            'building_society_num': '"building_society_num"',
             'post_office_name': '""',
             'post_office_address': '""',
             'collection_flag': '"N"',
@@ -105,7 +106,8 @@ def create_payment_objs(dat_path):
             amount=dat[i + 10],
             bank_sort_code=dat[i + 15],
             bank_account_num=dat[i + 16],
-            bank_account_name=dat[i + 17])
+            bank_account_name=dat[i + 17],
+            building_society_num=dat[i + 18])
         payments_list.append(payment)
     return payments_list
 
@@ -173,7 +175,7 @@ def combine_payments(payments_list):
 def aggregate_payments(account_ref):
     """
     Given a tuple of payments attached to an account ref, creates a new
-    Payment object with an aggregation of their total payment amounts.
+    Payment object with an aggregation of their total payment amounts
 
     Args:
         combined_payments (tuple of str, list of Payment): A dictionary object
@@ -189,6 +191,9 @@ def aggregate_payments(account_ref):
         aggr_amount += amount
     # Rounds to two decimal places and adds the quotes back
     aggr_amount = '"{:.2f}"'.format(aggr_amount)
+    check_building_society(
+        account_ref[1][0].bank_account_num,
+        account_ref[1][0].building_society_num)
     aggr_payment = Payment(
         batch_run_id=account_ref[1][0].batch_run_id,
         posting_ref=account_ref[1][0].posting_ref,
@@ -198,8 +203,23 @@ def aggregate_payments(account_ref):
         amount=aggr_amount,
         bank_sort_code=account_ref[1][0].bank_sort_code,
         bank_account_num=account_ref[1][0].bank_account_num,
-        bank_account_name=account_ref[1][0].bank_account_name)
+        bank_account_name=account_ref[1][0].bank_account_name,
+        building_society_num=account_ref[1][0].building_society_num)
     return aggr_payment
+
+def check_building_society(account_num, building_society_num):
+    """
+    Checks to see if any records have a rolling building society number
+    If so, exit the program and leave the file record intact
+
+    Args:
+        account_num (str): The account number of a record
+        building_society_num (str): The building society number of a record
+    """
+    if building_society_num != '"0" ':
+        print('{} has a rolling building society no. of {}'.format(
+            account_num, building_society_num))
+        sys.exit(1)
 
 def write_aggregate_payments(dat_path, aggr_payments_list):
     """
