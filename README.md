@@ -23,8 +23,8 @@ payee and writes it back to the file.
 
 ## TODO
 
-~~1. load_files()~~
-2. create_payments()
+1. ~~load_files()~~
+2. ~~create_payments()~~
 3. create_keys()
 4. assign_keys()
 5. sum_payments()
