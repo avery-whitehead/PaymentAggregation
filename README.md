@@ -14,7 +14,7 @@ payee and writes it back to the file.
 
 ## Processes
 
-1. load_file() - gets the file names from a directory. Returns a list of the file paths for the files.
+1. load_files() - gets the file names from a directory. Returns a list of the file paths for the files.
 2. create_payments() - reads in the files and create a Payment object for each record. Returns a list of Payment objects. Calls gen_account_ref() to return a string for the account reference.
 3. create_keys() - makes a series of primary keys. Returns a dictionary with the primary keys as the keys and an empty list for each value.
 4. assign_keys() - fills the lists in the dictionary values with the matching Payment objects. Returns the dictionary from create_keys() but with Payment objects filling the empty list.
@@ -23,7 +23,7 @@ payee and writes it back to the file.
 
 ## TODO
 
-1. load_file()
+~~1. load_files()~~
 2. create_payments()
 3. create_keys()
 4. assign_keys()

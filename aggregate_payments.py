@@ -19,7 +19,7 @@ HOW IT WORKS:
     6. Each of these new Payment objects is written back to file.
 
 PROCESSES:
-    1. load_file() - gets the file names from a directory. Returns a list of
+    1. load_files() - gets the file names from a directory. Returns a list of
     the file paths for the files.
     2. create_payments() - reads in the files and create a Payment object for
     each record. Returns a list of Payment objects. Calls gen_account_ref() to
@@ -39,10 +39,31 @@ PROCESSES:
     files were written.
 
 TODO:
-    1. load_file()
-    2. create_payments()
-    3. create_keys()
-    4. assign_keys()
-    5. sum_payments()
-    6. write_payments()
+    1. create_payments()
+    2. create_keys()
+    3. assign_keys()
+    4. sum_payments()
+    5. write_payments()
 """
+
+import os
+
+def load_files(file_dir: str) -> list:
+    """
+    Gets the names of all the BPY331 formatted files from a directory.
+    Args:
+        file_dir (str): The directory to search
+    Returns:
+        (list): A list of the paths of the files
+    """
+    files_list = []
+    for _, _, files in os.walk(file_dir):
+        for file in files:
+            if file.startswith('bpy331_') and file.endswith('.dat'):
+                files_list.append('{}/{}'.format(file_dir, file))
+    return files_list
+
+
+if __name__ == '__main__':
+    files = load_files('./data')
+    print(files)
