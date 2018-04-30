@@ -39,9 +39,7 @@ PROCESSES:
     files were written.
 
 TODO:
-    1. assign_keys()
-    2. sum_payments()
-    3. write_payments()
+    1. write_payments()
 """
 
 import os
@@ -208,7 +206,7 @@ def create_keys(payments: list) -> dict:
             payment.building_society_num[1:-2])
         keys.append(key)
     # Sets the default value for each key in the dict to be an empty list
-    # Note: doesn't work using fromkeys()
+    # Note: doesn't work using fromkeys(); each value refers to the same list
     return {k: [] for k in keys}
 
 def assign_keys(payments: list, keys: dict) -> dict:
@@ -234,6 +232,46 @@ def assign_keys(payments: list, keys: dict) -> dict:
                 keys[payment_key].append(payment)
     return keys
 
+def sum_payments(keys_vals: dict) -> list:
+    """
+    For each key-value pair in the dictionary, sums the total amount paid
+    for each Payment object in each value list and creates a single new
+    Payment object based on that total amount and the other attributes
+    taken from the first Payment object in the list.
+    Because each Payment object in the list has the same values, it doesn't
+    matter which object we take the attributes from, but some lists only have
+    a single Payment object in them, so we take the first.
+    Args:
+        keys_vals (dict): A dictionary with each Payment object assigned to a
+        unique key depending on their attributes. Matching Payment objects
+        have the same key.
+    Returns:
+        (list): A list of newly-aggregated Payment objects, one for each key
+        in the dictionary.
+    """
+    new_payments = []
+    for _, payments in keys_vals.items():
+        total = 0
+        for payment in payments:
+            amount = payment.amount.replace('"', '').replace(' ', '')
+            total += float(amount)
+        # Rounds the total to two decimal places and adds the quotes back
+        total = '"{:.2f}"'.format(total)
+        new_payment = Payment(
+            batch_run_id = payments[0].batch_run_id,
+            posting_ref = payments[0].posting_ref,
+            account_ref = payments[0].account_ref,
+            payee_name = payments[0].payee_name,
+            claim_ref = payments[0].claim_ref,
+            amount = total,
+            bank_sort_code = payments[0].bank_sort_code,
+            bank_account_num = payments[0].bank_account_num,
+            bank_account_name = payments[0].bank_account_name,
+            building_society_num = payments[0].building_society_num)
+        new_payments.append(new_payment)
+    return new_payments
+
+
 if __name__ == '__main__':
     SYSTIME = datetime.date.today().strftime('%d-%b-%Y').upper()
     files = load_files('./data')
@@ -241,4 +279,6 @@ if __name__ == '__main__':
         payments = create_payments(f)
         keys = create_keys(payments)
         keys_vals = assign_keys(payments, keys)
-        print(keys_vals)
+        new_payments = sum_payments(keys_vals)
+        for new_payment in new_payments:
+            new_payment.print_payment()
