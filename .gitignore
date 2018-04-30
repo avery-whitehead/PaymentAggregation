@@ -1,4 +1,6 @@
 aggregate_payments_old.py
+aggregate_payments_old_old.py
+.vscode
 data
 temp
 checked_files.log
