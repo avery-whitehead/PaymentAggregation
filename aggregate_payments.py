@@ -207,8 +207,32 @@ def create_keys(payments: list) -> dict:
             payment.account_ref[1:-1],
             payment.building_society_num[1:-2])
         keys.append(key)
-    return dict.fromkeys(keys, [])
+    # Sets the default value for each key in the dict to be an empty list
+    # Note: doesn't work using fromkeys()
+    return {k: [] for k in keys}
 
+def assign_keys(payments: list, keys: dict) -> dict:
+    """
+    Fills the values for each key with the appropriate Payment objects. Each
+    Payment object has an account reference and a building society number,
+    which when stripped of quotation marks and whitespace and joined
+    together with a forward-slash in between, will equal a key in the dict.
+    Args:
+        keys (dict): A dictionary of keys and empty lists to be filled with
+        Payment objects.
+    Returns:
+        (dict): The dictionary passed as an argument with Payment objects
+        taking the place of the values.
+    """
+    for payment in payments:
+        payment_key = '{}/{}'.format(
+            payment.account_ref[1:-1],
+            payment.building_society_num[1:-2])
+        for key in keys:
+            if key == payment_key:
+                print(payment_key)
+                keys[payment_key].append(payment)
+    return keys
 
 if __name__ == '__main__':
     SYSTIME = datetime.date.today().strftime('%d-%b-%Y').upper()
@@ -216,4 +240,5 @@ if __name__ == '__main__':
     for f in files:
         payments = create_payments(f)
         keys = create_keys(payments)
-        print(keys)
+        keys_vals = assign_keys(payments, keys)
+        print(keys_vals)
