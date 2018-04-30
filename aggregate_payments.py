@@ -39,10 +39,9 @@ PROCESSES:
     files were written.
 
 TODO:
-    1. create_keys()
-    2. assign_keys()
-    3. sum_payments()
-    4. write_payments()
+    1. assign_keys()
+    2. sum_payments()
+    3. write_payments()
 """
 
 import os
@@ -115,7 +114,6 @@ class Payment(object):
             <sort_code check digit>"
         """
         # Splits up the sort code into its digits
-        print(sort_code)
         sort_digits = [
             int(dig) for dig
             in list(sort_code.replace('-', ''))]
@@ -136,7 +134,7 @@ class Payment(object):
             mod_char = 'A'
         else:
             mod_char = chr(mod_digs + 64)
-        return '"{}{}{}"'.format(mod_char, account_num, str(checkdig))
+        return '"{}{}{}"'.format(mod_char, account_num[2:], str(checkdig))
 
     def print_payment(self) -> None:
         """
@@ -202,12 +200,20 @@ def create_keys(payments: list) -> dict:
         values being empty lists, to be filled with the associated Payment
         objects later.
     """
-    print()
+    keys = []
+    for payment in payments:
+        # Trims the quotation marks and trailing whitespace
+        key = '{}/{}'.format(
+            payment.account_ref[1:-1],
+            payment.building_society_num[1:-2])
+        keys.append(key)
+    return dict.fromkeys(keys, [])
+
 
 if __name__ == '__main__':
     SYSTIME = datetime.date.today().strftime('%d-%b-%Y').upper()
     files = load_files('./data')
     for f in files:
         payments = create_payments(f)
-        for payment in payments:
-            payment.print_payment()
+        keys = create_keys(payments)
+        print(keys)

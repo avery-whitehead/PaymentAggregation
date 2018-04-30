@@ -25,7 +25,7 @@ payee and writes it back to the file.
 
 1. ~~load_files()~~
 2. ~~create_payments()~~
-3. create_keys()
+3. ~~create_keys()~~
 4. assign_keys()
 5. sum_payments()
 6. write_payments()
