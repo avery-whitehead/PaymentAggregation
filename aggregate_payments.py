@@ -37,9 +37,6 @@ PROCESSES:
     6. write_payments() - writes the new Payment objects to a file in the same
     structure as the original files. Returns a success string about which
     files were written.
-
-TODO:
-    1. write_payments()
 """
 
 import os
@@ -228,7 +225,6 @@ def assign_keys(payments: list, keys: dict) -> dict:
             payment.building_society_num[1:-2])
         for key in keys:
             if key == payment_key:
-                print(payment_key)
                 keys[payment_key].append(payment)
     return keys
 
@@ -271,6 +267,36 @@ def sum_payments(keys_vals: dict) -> list:
         new_payments.append(new_payment)
     return new_payments
 
+def write_payments(filepath: str, new_payments: list) -> str:
+    """
+    Writes a list of Payment objects to a file in the same format as the file they
+    were read from.
+    Args:
+        filepath (str): The path of the file to write to (the same as the
+        file we read from in load_files())
+        new_payments (list): A list of Payment objects to write to file
+    Returns:
+        (str): A string indicating the file written to and the amount of
+        Payment objects in the file
+    """
+    count = 0
+    new_path = '{}.new'.format(filepath[:-4])
+    # Gets the header from the original file
+    with open(filepath, 'r') as read:
+        header = read.read().splitlines()[0]
+    with open(new_path, 'w') as write:
+        write.write('{}\n'.format(header))
+        for payment in new_payments:
+            for key, value in payment.__dict__.items():
+                if key != 'defaults':
+                    write.write('{}\n'.format(value))
+            count += 1
+            print('Written {}/{} payments to {}'.format(
+                count, len(new_payments), new_path))
+    return 'Successfully written {}/{} payments to {}'.format(
+        count, len(new_payments), new_path)
+
+
 
 if __name__ == '__main__':
     SYSTIME = datetime.date.today().strftime('%d-%b-%Y').upper()
@@ -280,5 +306,4 @@ if __name__ == '__main__':
         keys = create_keys(payments)
         keys_vals = assign_keys(payments, keys)
         new_payments = sum_payments(keys_vals)
-        for new_payment in new_payments:
-            new_payment.print_payment()
+        print(write_payments(f, new_payments))

@@ -28,4 +28,4 @@ payee and writes it back to the file.
 3. ~~create_keys()~~
 4. ~~assign_keys()~~
 5. ~~sum_payments()~~
-6. write_payments()
+6. ~~write_payments()~~
