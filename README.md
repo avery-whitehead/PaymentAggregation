@@ -20,12 +20,3 @@ payee and writes it back to the file.
 4. assign_keys() - fills the lists in the dictionary values with the matching Payment objects. Returns the dictionary from create_keys() but with Payment objects filling the empty list.
 5. sum_payments() - goes through each Payment object in each list and sums the total of their payment amounts. Creates a new Payment object for each key with the same attributes as the old Payment objects, but with the sum total attribute replacing the old individual amounts. Returns a list of new Payment objects.
 6. write_payments() - writes the new Payment objects to a file in the same structure as the original files. Returns a success string about which files were written.
-
-## TODO
-
-1. ~~load_files()~~
-2. ~~create_payments()~~
-3. ~~create_keys()~~
-4. ~~assign_keys()~~
-5. ~~sum_payments()~~
-6. ~~write_payments()~~

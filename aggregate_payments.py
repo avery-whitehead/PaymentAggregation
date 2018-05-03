@@ -37,10 +37,14 @@ PROCESSES:
     6. write_payments() - writes the new Payment objects to a file in the same
     structure as the original files. Returns a success string about which
     files were written.
+
+https://github.com/james-whitehead/PaymentAggregation
 """
 
 import os
 import datetime
+import shutil
+import sys
 
 class Payment(object):
     """
@@ -55,7 +59,7 @@ class Payment(object):
             'account_ref': '"NOT_YET_SET"',
             'payee_type': '"CL"',
             'payee_name': '"payee_name"',
-            'payee_address': '"Aggregated DHP UC Payment"',
+            'payee_address': '"payee_address"',
             'claim_ref': '"claim_ref"',
             'claimant_name': '"Aggregated DHP UC Payment"',
             'claimant_adddress': '"Aggregated DHP UC Payment"',
@@ -153,18 +157,29 @@ class Payment(object):
 
 def load_files(file_dir: str) -> list:
     """
-    Gets the names of all the BPY331 formatted files from a directory.
+    Gets the most-recently modified file in the directory, as long as it
+    hasn't been modified in the past 5 minutes and hasn't been aggregated
+    before.
     Args:
         file_dir (str): The directory to search.
     Returns:
-        (list): A list of the paths of the files.
+        (str): The path of the most-recently modified file that meets the
+        rules. If no files meet the rules, throws a ValueError exception.
     """
+    with open('.\\already_checked.log', 'r') as already_checked:
+        checked = already_checked.read().splitlines()
     files_list = []
-    for _, _, files in os.walk(file_dir):
+    now = datetime.datetime.now()
+    delta = now - datetime.timedelta(minutes=5)
+    for root, _, files in os.walk(file_dir):
         for file in files:
             if file.startswith('bpy331_') and file.endswith('.dat'):
-                files_list.append('{}/{}'.format(file_dir, file))
-    return files_list
+                path = os.path.join(root, file)
+                stats = os.stat(path)
+                modif = datetime.datetime.fromtimestamp(stats.st_mtime)
+                if modif > delta and path not in checked:
+                    files_list.append(path)
+    return max(files_list, key=lambda f: os.stat(f).st_mtime)
 
 def create_payments(filepath: str) -> list:
     """
@@ -184,6 +199,7 @@ def create_payments(filepath: str) -> list:
             batch_run_id = records[i + 1],
             posting_ref = records[i + 2],
             payee_name = records[i + 17],
+            payee_address = records[i + 6],
             amount = records[i + 10],
             bank_sort_code = records[i + 15],
             bank_account_num = records[i + 16],
@@ -267,6 +283,7 @@ def sum_payments(keys_vals: dict) -> list:
             posting_ref = payments[0].posting_ref,
             account_ref = payments[0].account_ref,
             payee_name = payments[0].payee_name,
+            payee_address = payments[0].payee_address,
             claim_ref = payments[0].claim_ref,
             amount = total,
             bank_sort_code = payments[0].bank_sort_code,
@@ -276,43 +293,50 @@ def sum_payments(keys_vals: dict) -> list:
         new_payments.append(new_payment)
     return new_payments
 
-def write_payments(filepath: str, new_payments: list) -> str:
+def write_payments(path: str, backup: str, new_payments: list) -> str:
     """
     Writes a list of Payment objects to a file in the same format as the file
     they were read from.
     Args:
-        filepath (str): The path of the file to write to (the same as the
+        path (str): The path of the file to write to (the same as the
         file we read from in load_files())
+        backup (str): The path to back the files up to
         new_payments (list): A list of Payment objects to write to file
     Returns:
         (str): A string indicating the file written to and the amount of
         Payment objects in the file
     """
     count = 0
-    new_path = '{}.new'.format(filepath[:-4])
+    # Backs up the original file
+    shutil.copy2(path, backup)
     # Gets the header from the original file
-    with open(filepath, 'r') as read:
+    with open(path, 'r') as read:
         header = read.read().splitlines()[0]
-    with open(new_path, 'w') as write:
+    with open(path, 'w') as write:
         write.write('{}\n'.format(header))
         for payment in new_payments:
             for key, value in payment.__dict__.items():
                 if key != 'defaults':
                     write.write('{}\n'.format(value))
             count += 1
-            print('Written {}/{} payments to {}'.format(
-                count, len(new_payments), new_path))
-    return 'Successfully written {}/{} payments to {}'.format(
-        count, len(new_payments), new_path)
-
-
+    # Logs the file so it isn't aggregated again
+    with open('.\\already_checked.log', 'a') as already_checked:
+        already_checked.write('{}\n'.format(path))
+    success_string = '{}: Successfully written {}/{} payments to {}\n'.format(
+        SYSTIME, count, len(new_payments), path)
+    with open('.\\payments.log', 'a') as log:
+        log.write(success_string)
+    return success_string
 
 if __name__ == '__main__':
     SYSTIME = datetime.date.today().strftime('%d-%b-%Y').upper()
-    files = load_files('./data')
-    for f in files:
-        payments = create_payments(f)
-        keys = create_keys(payments)
-        keys_vals = assign_keys(payments, keys)
-        new_payments = sum_payments(keys_vals)
-        print(write_payments(f, new_payments))
+    try:
+        f = load_files('G:\\spool\\RBTEST\\frb_output')
+    except ValueError:
+        print('No new files')
+        sys.exit(1)
+    payments = create_payments(f)
+    keys = create_keys(payments)
+    keys_vals = assign_keys(payments, keys)
+    new_payments = sum_payments(keys_vals)
+    print(write_payments(f, 'G:\\spool\\RBTEST\\archive', new_payments))
