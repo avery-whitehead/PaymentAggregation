@@ -45,6 +45,8 @@ import os
 import datetime
 import shutil
 import sys
+import smtplib
+from email.message import EmailMessage
 
 class Payment(object):
     """
@@ -322,21 +324,40 @@ def write_payments(path: str, backup: str, new_payments: list) -> str:
     # Logs the file so it isn't aggregated again
     with open('.\\already_checked.log', 'a') as already_checked:
         already_checked.write('{}\n'.format(path))
-    success_string = '{}: Successfully written {}/{} payments to {}\n'.format(
-        SYSTIME, count, len(new_payments), path)
+    success_string = '{} - Successfully written {}/{} payments to {}\n'.format(
+        WRITETIME, count, len(new_payments), path)
     with open('.\\payments.log', 'a') as log:
         log.write(success_string)
     return success_string
 
+def send_email(path: str, success_string: str) -> None:
+    """
+    Sends an email indicating success.
+    Args:
+        path (str): The path written to by write_payments()
+        success_string (str): The string returned from write_payments()
+    """
+    msg = EmailMessage()
+    msg.set_content(success_string)
+    msg['Subject'] = path[-23:]
+    msg['From'] = 'svc.hdc@hambleton.gov.uk'
+    msg['To'] = 'ITSYSTEMS@hambleton.gov.uk'
+    server = smtplib.SMTP('10.62.128.127')
+    server.send_message(msg)
+    server.quit()
+
 if __name__ == '__main__':
     SYSTIME = datetime.date.today().strftime('%d-%b-%Y').upper()
+    WRITETIME = datetime.datetime.now().strftime('%d-%b-%Y %H:%M:%S')
     try:
         f = load_files('G:\\spool\\RBTEST\\frb_output')
     except ValueError:
-        print('No new files')
+        with open('.\\payments.log', 'a') as log:
+            log.write('{}\n'.format(WRITETIME))
         sys.exit(1)
     payments = create_payments(f)
     keys = create_keys(payments)
     keys_vals = assign_keys(payments, keys)
     new_payments = sum_payments(keys_vals)
-    print(write_payments(f, 'G:\\spool\\RBTEST\\archive', new_payments))
+    success = write_payments(f, 'G:\\spool\\RBTEST\\archive', new_payments)
+    send_email(f, success)
