@@ -123,7 +123,7 @@ def get_file_name(file_dir: str) -> str:
         (str): The path of the most-recently modified file that meets the
         rules. If no files meet the rules, throws a ValueError exception.
     """
-    with open('.\\already_checked.log', 'r') as already_checked:
+    with open('.\\logs\\already_checked.log', 'r') as already_checked:
         checked = already_checked.read().splitlines()
     files_list = []
     now = datetime.datetime.now()
@@ -185,7 +185,7 @@ if __name__ == '__main__':
         f = get_file_name('.\\data')
     except ValueError:
         # Writes to log with just the current time if file not found
-        with open('.\\payments.log', 'a') as log:
+        with open('.\\logs\\payments.log', 'a') as log:
             log.write(f'{WRITETIME}\n')
         sys.exit(1)
     lines = read_file(f)
