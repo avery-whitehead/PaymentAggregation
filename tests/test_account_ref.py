@@ -42,7 +42,7 @@ class TestCheckdigits(unittest.TestCase):
         self.assertEqual(check_digit % 10, 3)
         self.assertEqual(verify_check_digit(check_digit), True)
 
-def generate_check_digit(sort_code):
+def generate_check_digit(sort_code: str) -> int:
     """
     Generates a mod10 (Luhn) algorithm checkdigit from a bank sort code
 
@@ -68,7 +68,7 @@ def generate_check_digit(sort_code):
         check_digit = 0
     return int(str(sort_code) + str(check_digit))
 
-def verify_check_digit(check_digit):
+def verify_check_digit(check_digit: str) -> bool:
     """
     Verifies the check digit is correct
 
