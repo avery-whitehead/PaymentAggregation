@@ -31,8 +31,6 @@ PROCESSES:
 NOTES:
     * The database connection string is created using a .config file that isn't
     on GitHub, so directly cloning the repository won't work.
-    * If a payment record doesn't include a rolling building society number
-    (i.e. the field is 0), the entry in the database will be NULL.
     * Each field in the file is wrapped in double quotes and may have trailing
     whitespace. The entries in the database don't have these characters, so
     they are removed when checking against and writing to the table.
@@ -75,8 +73,8 @@ class Payment:
             'posting_end_date': f'"{SYSTIME}"',
             'payment_method': '"BACS"',
             'creditor_account_ref': '""',
-            'bank_sort_code': '"NOT SET"',
-            'bank_account_num': '"NOT SET"',
+            'sort_code': '"NOT SET"',
+            'bank_account': '"NOT SET"',
             'bank_account_name': '"NOT SET"',
             'building_society_num': '"NOT SET"',
             'post_office_name': '""',
@@ -113,6 +111,22 @@ class Payment:
                 else:
                     print(value)
         print()
+
+    def get_sql_fields(self) -> dict:
+        """
+        Gets the bank account, sort code, name and building society number
+        fields (the ones used in the SQL database) from this Payment object
+        with surrounding quotes and trailing whitespace removed.
+        Returns:
+            (dict): A dictionary with keys of the column names and the values
+            of this Payment object.
+        """
+        return {
+            'bank_account': self.bank_account[1:-2],
+            'sort_code': self.sort_code[1:-2],
+            'payee_name': self.payee_name[1:-2],
+            'building_society_num': self.building_society_num[1:-2]}
+
 
 def get_file_name(file_dir: str) -> str:
     """
@@ -163,7 +177,6 @@ def create_payments(lines: list) -> list:
         (list): A list of Payment objects created from the records in the file.
     """
     payments = []
-    print(lines)
     for i in range(1, len(lines), 29):
         payment = Payment(
             batch_run_id = lines[i + 1],
@@ -171,13 +184,37 @@ def create_payments(lines: list) -> list:
             payee_name = lines[i + 17],
             payee_address = lines[i + 6],
             amount = lines[i + 10],
-            bank_sort_code = lines[i + 15],
-            bank_account_num = lines[i + 16],
+            sort_code = lines[i + 15],
+            bank_account = lines[i + 16],
             bank_account_name = lines[i + 17],
             building_society_num = lines[i + 18])
         payments.append(payment)
     return payments
 
+def query_payments(connection: pyodbc.Connection, payments: list) -> list:
+    """
+    Queries the SQL database to either get or create the unique reference
+    for each Payment object and sets the attribute of the object to that
+    reference.
+    Args:
+        payments (list): The list of Payment objects to query.
+    Returns:
+        (list): A list of the updated Payment objects.
+    """
+    with open('.\\sql\\insert_query.sql') as insert_f:
+        insert_query = insert_f.read()
+    with open('.\\sql\\select_query.sql') as select_f:
+        select_query = select_f.read()
+    for payment in payments:
+        sql = payment.get_sql_fields()
+        cursor = connection.cursor()
+        # Creates an entry in the database if one doesn't exist
+        count = cursor.execute(insert_query, (
+            sql['bank_account'], sql['sort_code'], sql['payee_name'],
+            sql['building_society_num'], sql['bank_account'],
+            sql['sort_code'], sql['payee_name'],
+            sql['building_society_num'])).rowcount
+        print(count)
 
 if __name__ == '__main__':
     SYSTIME = datetime.date.today().strftime('%d-%b-%Y').upper()
@@ -207,5 +244,5 @@ if __name__ == '__main__':
         sys.exit(1)
     lines = read_file(f)
     payments = create_payments(lines)
-    for index, payment in enumerate(payments):
-        payment.print_payment(index)
+    query_payments(DB_CONN, payments)
+
