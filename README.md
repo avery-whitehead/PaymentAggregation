@@ -5,18 +5,38 @@ payee and writes it back to the file.
 
 ## How it works
 
-1. The filenames of new files are read from the directory.
-2. A Payment object is created for each record in a file. An account reference is made for each Payment object. A mod10 algorithm is used tocreate a checkdigit from the bank sort code, and a mod26 algorithm on the first two digits of the bank account number is used to create an A-Zcharacter. The first two digits of the bank account number are replaced with the A-Z character, and the checkdigit is appended to the end of that.
-3. A primary key is created for each unique combination of account reference and building society number.
-4. Each Payment object is assigned to its matching primary key based on the value of its account reference and building society number.
-5. For each primary key, the total amount paid for each Payment object belonging to it is summed up, and a new Payment object is created.
-6. Each of these new Payment objects is written back to file.
+1. The most recent unmodified file in the directory is read and a list of
+Payment objects is created for each payment record in the file. If no such
+file exists, the program exits.
+2. The fields of each Payment object are checked against the database. If
+the fields match an entry, the unique identifier for that entry is used to
+group together identical Payment objects. If the fields don't match an
+entry, a new entry is created and the unique identifier for the new entry
+is used.
+3. For each group of identical Payment objects, the total amount paid is
+summed up, and a new Payment object is created with the summation.
+4. Each new Payment object is written back to the file, overwriting the old
+records.
+5. An email is sent containing details about the aggregation.
 
 ## Processes
 
-1. load_files() - gets the file names from a directory. Returns a list of the file paths for the files.
-2. create_payments() - reads in the files and create a Payment object for each record. Returns a list of Payment objects. Calls gen_account_ref() to return a string for the account reference.
-3. create_keys() - makes a series of primary keys. Returns a dictionary with the primary keys as the keys and an empty list for each value.
-4. assign_keys() - fills the lists in the dictionary values with the matching Payment objects. Returns the dictionary from create_keys() but with Payment objects filling the empty list.
-5. sum_payments() - goes through each Payment object in each list and sums the total of their payment amounts. Creates a new Payment object for each key with the same attributes as the old Payment objects, but with the sum total attribute replacing the old individual amounts. Returns a list of new Payment objects.
-6. write_payments() - writes the new Payment objects to a file in the same structure as the original files. Returns a success string about which files were written.
+1. get_file_name() to get the most recent unmodified file in the directory,
+read_file() to read the contents into memory and create_payments() to
+create the Payment objects.
+2. query_payments() to get or create the unique identifier for each Payment
+object and group_payments() to create a dictionary using the unique
+identifiers for keys.
+3. sum_payments() to sum up the totals and create a new Payment object.
+4. write_new_payments() to write the new Payment objects back to the file.
+5. send_email() to send the email.
+
+## Notes
+
+* The database connection string is created using a .config file that isn't
+on GitHub, so directly cloning the repository won't work.
+* If a payment record doesn't include a rolling building society number
+(i.e. the field is 0), the entry in the database will be NULL.
+* Each field in the file is wrapped in double quotes and may have trailing
+whitespace. The entries in the database don't have these characters, so
+they are removed when checking against and writing to the table.
