@@ -43,6 +43,8 @@ https://github.com/james-whitehead/PaymentAggregation
 import datetime
 import os
 import sys
+import json
+import pyodbc
 
 class Payment:
     """
@@ -180,11 +182,26 @@ def create_payments(lines: list) -> list:
 if __name__ == '__main__':
     SYSTIME = datetime.date.today().strftime('%d-%b-%Y').upper()
     WRITETIME = datetime.datetime.now().strftime('%d-%b-%Y %H:%M:%S')
+    with open('.\\.config') as config_f:
+        config = json.load(config_f)
+    # Attempts to connect to the SQL database
+    try:
+        DB_CONN = pyodbc.connect(
+            driver=config['driver'],
+            server=config['server'],
+            database=config['database'],
+            uid=config['uid'],
+            pwd=config['pwd'])
+    except pyodbc.InterfaceError as error:
+        # Writes to log with current time and error
+        with open('.\\logs\\payments.log', 'a') as log:
+            log.write(f'{WRITETIME} - {error}\n')
+        sys.exit(1)
     # Attempts to open the most recent file
     try:
         f = get_file_name('.\\data')
     except ValueError:
-        # Writes to log with just the current time if file not found
+        # Writes to log with just the current time
         with open('.\\logs\\payments.log', 'a') as log:
             log.write(f'{WRITETIME}\n')
         sys.exit(1)
