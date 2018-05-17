@@ -220,6 +220,31 @@ def query_payments(connection: pyodbc.Connection, payments: list) -> None:
             sql['building_society_num']))
         payment.account_ref = f'"{cursor.fetchone()[0]}"'
 
+def group_payments(payments: list) -> dict:
+    """
+    Groups together Payment objects with the same account reference into
+    a dictionary.
+    Args:
+        payments (list): The list of Payment objects to group.
+    Returns:
+        (dict): A dictionary with each account reference as a key and a
+        list of the Payment objects with that account reference as its
+        value.
+    """
+    groups = {}
+    for payment in payments:
+        groups.setdefault(payment.account_ref, []).append(payment)
+    return groups
+
+def print_formatted_groups(groups: dict) -> None:
+    """
+    Formats and prints the groups dictionary with each key on a separate line.
+    Args:
+        groups (dict): The groups dictionary to be printed out.
+    """
+    for key, values in groups.items():
+        print(f'{key}: {len(values)} instance(s) of {values[0].payee_name}')
+
 
 if __name__ == '__main__':
     SYSTIME = datetime.date.today().strftime('%d-%b-%Y').upper()
@@ -250,5 +275,5 @@ if __name__ == '__main__':
     lines = read_file(f)
     payments = create_payments(lines)
     query_payments(DB_CONN, payments)
-    for index, payment in enumerate(payments):
-        payment.print_payment(index)
+    groups = group_payments(payments)
+    print_formatted_groups(groups)
