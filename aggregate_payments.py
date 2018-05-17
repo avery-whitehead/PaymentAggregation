@@ -242,8 +242,43 @@ def print_formatted_groups(groups: dict) -> None:
     Args:
         groups (dict): The groups dictionary to be printed out.
     """
-    for key, values in groups.items():
-        print(f'{key}: {len(values)} instance(s) of {values[0].payee_name}')
+    for key, payments in groups.items():
+        amount = len(payments)
+        name = payments[0].payee_name
+        print(f'{key}: {amount} instance(s) of {name}')
+
+def sum_payments(groups: dict) -> list:
+    """
+    Iterates over the groups dictionary and creates a new Payment object
+    for each key, with the amount field set to the summation of every amount
+    belonging to that key. Every other field apart from the amount field is
+    identical for each key, so just take the first (or possibly only) element
+    in that list for those fields.
+    Args:
+        groups (dict): The Payment objects grouped by account reference.
+    Returns:
+        (list): One Payment object for each key with the total amount for all
+        Payment objects belonging to that key.
+    """
+    summed_payments = []
+    for _, payments in groups.items():
+        total = 0
+        for payment in payments:
+            amount = float(payment.amount[1:-2])
+            total += amount
+        str_total = '"{0:.2f}"'.format(total)
+        summed_payments.append(Payment(
+            batch_run_id = payments[0].batch_run_id,
+            posting_ref = payments[0].posting_ref,
+            account_ref = payments[0].account_ref,
+            payee_name = payments[0].payee_name,
+            payee_address = payments[0].payee_address,
+            amount = str_total,
+            sort_code = payments[0].sort_code,
+            bank_account = payments[0].bank_account,
+            bank_account_name = payments[0].bank_account_name,
+            building_society_num = payments[0].building_society_num))
+    return summed_payments
 
 
 if __name__ == '__main__':
@@ -276,4 +311,6 @@ if __name__ == '__main__':
     payments = create_payments(lines)
     query_payments(DB_CONN, payments)
     groups = group_payments(payments)
-    print_formatted_groups(groups)
+    summed_payments = sum_payments(groups)
+    for index, payment in enumerate(summed_payments):
+        payment.print_payment(index)
