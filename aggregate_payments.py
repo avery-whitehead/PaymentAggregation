@@ -191,15 +191,14 @@ def create_payments(lines: list) -> list:
         payments.append(payment)
     return payments
 
-def query_payments(connection: pyodbc.Connection, payments: list) -> list:
+def query_payments(connection: pyodbc.Connection, payments: list) -> None:
     """
     Queries the SQL database to either get or create the unique reference
     for each Payment object and sets the attribute of the object to that
-    reference.
+    reference. Payment object are updated in-place, so we don't need to
+    return anything.
     Args:
         payments (list): The list of Payment objects to query.
-    Returns:
-        (list): A list of the updated Payment objects.
     """
     with open('.\\sql\\insert_query.sql') as insert_f:
         insert_query = insert_f.read()
@@ -209,12 +208,18 @@ def query_payments(connection: pyodbc.Connection, payments: list) -> list:
         sql = payment.get_sql_fields()
         cursor = connection.cursor()
         # Creates an entry in the database if one doesn't exist
-        count = cursor.execute(insert_query, (
+        cursor.execute(insert_query, (
             sql['bank_account'], sql['sort_code'], sql['payee_name'],
             sql['building_society_num'], sql['bank_account'],
             sql['sort_code'], sql['payee_name'],
-            sql['building_society_num'])).rowcount
-        print(count)
+            sql['building_society_num']))
+        connection.commit()
+        # Gets the account reference from the database
+        cursor.execute(select_query, (
+            sql['bank_account'], sql['sort_code'], sql['payee_name'],
+            sql['building_society_num']))
+        payment.account_ref = f'"{cursor.fetchone()[0]}"'
+
 
 if __name__ == '__main__':
     SYSTIME = datetime.date.today().strftime('%d-%b-%Y').upper()
@@ -245,4 +250,5 @@ if __name__ == '__main__':
     lines = read_file(f)
     payments = create_payments(lines)
     query_payments(DB_CONN, payments)
-
+    for index, payment in enumerate(payments):
+        payment.print_payment(index)
