@@ -42,6 +42,9 @@ import datetime
 import os
 import sys
 import json
+import shutil
+import smtplib
+from email.message import EmailMessage
 import pyodbc
 
 class Payment:
@@ -183,6 +186,7 @@ def create_payments(lines: list) -> list:
             posting_ref = lines[i + 2],
             payee_name = lines[i + 17],
             payee_address = lines[i + 6],
+            claim_ref = lines[i + 7],
             amount = lines[i + 10],
             sort_code = lines[i + 15],
             bank_account = lines[i + 16],
@@ -273,12 +277,67 @@ def sum_payments(groups: dict) -> list:
             account_ref = payments[0].account_ref,
             payee_name = payments[0].payee_name,
             payee_address = payments[0].payee_address,
+            claim_ref = payments[0].claim_ref,
             amount = str_total,
             sort_code = payments[0].sort_code,
             bank_account = payments[0].bank_account,
             bank_account_name = payments[0].bank_account_name,
             building_society_num = payments[0].building_society_num))
     return summed_payments
+
+def write_payments(path: str, backup: str, summed_payments: list) -> str:
+    """
+    Writes a list of Payment objects to a file in the same format as the file
+    they were read from.
+    Args:
+        path (str): The path of the file to write to (the same as the
+        file we read from in load_files())
+        backup (str): The path to back the files up to
+        new_payments (list): A list of Payment objects to write to file
+    Returns:
+        (str): A string indicating the file written to and the amount of
+        Payment objects in the file
+    """
+    # delete after testing
+    temp_new_file = f.replace('\\data', '\\new')
+    count = 0
+    # Backs up the original file
+    os.makedirs(os.path.dirname(backup), exist_ok=True)
+    shutil.copy2(path, backup)
+    # Gets the header from the original file
+    with open(path, 'r') as read:
+        header = read.read().splitlines()[0]
+    with open(temp_new_file, 'w') as write:
+        write.write('{}\n'.format(header))
+        for payment in summed_payments:
+            for key, value in payment.__dict__.items():
+                if key != 'defaults':
+                    write.write(f'{value}\n')
+            count += 1
+    # Logs the file so it isn't aggregated again
+    with open('.\\logs\\already_checked.log', 'a') as already_checked:
+        already_checked.write('{}\n'.format(path))
+    success_string = f'{WRITETIME} - Successfully written {count}/{len(summed_payments)} payments to {path}\n'
+    with open('.\\logs\\payments.log', 'a') as log:
+        log.write(success_string)
+    return success_string
+
+def send_email(path: str, success_string: str) -> None:
+    """
+    Sends an email indicating success.
+    Args:
+        path (str): The path written to by write_payments()
+        success_string (str): The string returned from write_payments()
+    """
+    msg = EmailMessage()
+    msg.set_content(success_string)
+    msg['Subject'] = path[-23:]
+    msg['From'] = 'svc.hdc@hambleton.gov.uk'
+    #msg['To'] = 'ITSYSTEMS@hambleton.gov.uk'
+    msg['To'] = 'james.whitehead@hambleton.gov.uk'
+    server = smtplib.SMTP('10.62.128.127')
+    server.send_message(msg)
+    server.quit()
 
 
 if __name__ == '__main__':
@@ -314,3 +373,5 @@ if __name__ == '__main__':
     summed_payments = sum_payments(groups)
     for index, payment in enumerate(summed_payments):
         payment.print_payment(index)
+    archive = f.replace('\\data', '\\archive')
+    write_payments(f, archive, summed_payments)
